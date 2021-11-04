@@ -4,13 +4,13 @@ import "context"
 
 type (
 	Sender interface {
-		Send(context.Context, Message) error
+		Send(context.Context, Message) (interface{}, error)
 	}
 	RequestHandler interface {
-		Handle(context.Context, Message) error
+		Handle(context.Context, Message) (interface{}, error)
 	}
 	PipelineBehaviour interface {
-		Process(context.Context, Message, Next) error
+		Process(context.Context, Message, Next) (interface{}, error)
 	}
 	Message interface {
 		Key() string

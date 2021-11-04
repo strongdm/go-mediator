@@ -3,7 +3,7 @@ package mediator
 import "context"
 
 type (
-	Behavior  func(context.Context, Message, Next) error
+	Behavior  func(context.Context, Message, Next) (interface{}, error)
 	Behaviors []Behavior
 )
 
@@ -13,9 +13,9 @@ func (b Behaviors) reverseApply(fn func(Behavior)) {
 	}
 }
 
-type Next func(ctx context.Context) error
+type Next func(ctx context.Context) (interface{}, error)
 
-type Pipeline func(context.Context, Message) error
+type Pipeline func(context.Context, Message) (interface{}, error)
 
 type Option func(pCtx *PipelineContext) error
 
@@ -45,7 +45,7 @@ func WithBehaviour(behavior PipelineBehaviour) Option {
 	}
 }
 
-func WithBehaviourFunc(fn func(context.Context, Message, Next) error) Option {
+func WithBehaviourFunc(fn func(context.Context, Message, Next) (interface{}, error)) Option {
 	return func(pCtx *PipelineContext) error {
 		return pCtx.use(fn)
 	}
@@ -64,7 +64,7 @@ func (p *PipelineContext) useBehavior(behavior PipelineBehaviour) error {
 	return p.use(behavior.Process)
 }
 
-func (p *PipelineContext) use(call func(context.Context, Message, Next) error) error {
+func (p *PipelineContext) use(call func(context.Context, Message, Next) (interface{}, error)) error {
 	if call == nil {
 		return ErrInvalidArg
 	}

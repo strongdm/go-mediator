@@ -18,15 +18,31 @@ func TestMediator_should_dispatch_msg_when_send(t *testing.T) {
 		mediator.WithHandler(&fakeCommand{}, handler),
 	)
 
-	err := m.Send(context.Background(), cmd)
+	_, err := m.Send(context.Background(), cmd)
 
 	assert.NoError(t, err)
 	assert.Equal(t, cmd, handler.captured)
 }
 
+func TestMediator_should_return_handler_result(t *testing.T) {
+	cmd := &fakeCommand{
+		name: "Amsterdam",
+	}
+	handler := &fakeCommandHandler{}
+
+	m, _ := mediator.New(
+		mediator.WithHandler(&fakeCommand{}, handler),
+	)
+
+	result, err := m.Send(context.Background(), cmd)
+
+	assert.NoError(t, err)
+	assert.Equal(t, cmd.name, result)
+}
+
 func TestMediator_should_execute_behavior_when_send(t *testing.T) {
 	var got mediator.Message
-	behavior := func(ctx context.Context, msg mediator.Message, next mediator.Next) error {
+	behavior := func(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
 		got = msg
 		return next(ctx)
 	}
@@ -41,10 +57,53 @@ func TestMediator_should_execute_behavior_when_send(t *testing.T) {
 		mediator.WithHandler(&fakeCommand{}, handler),
 	)
 
-	err := m.Send(context.Background(), cmd)
+	_, err := m.Send(context.Background(), cmd)
 
 	assert.NoError(t, err)
 	assert.Equal(t, cmd, got)
+}
+
+func TestMediator_with_behavior_should_return_handler_result(t *testing.T) {
+	passThru := func(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
+		return next(ctx)
+	}
+
+	cmd := &fakeCommand{
+		name: "Amsterdam",
+	}
+	handler := &fakeCommandHandler{}
+
+	m, _ := mediator.New(
+		mediator.WithBehaviourFunc(passThru),
+		mediator.WithHandler(&fakeCommand{}, handler),
+	)
+
+	result, err := m.Send(context.Background(), cmd)
+
+	assert.NoError(t, err)
+	assert.Equal(t, cmd.name, result)
+}
+
+func TestMediator_with_behavior_can_alter_handler_result(t *testing.T) {
+	passThru := func(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
+		_, err := next(ctx)
+		return 42, err
+	}
+
+	cmd := &fakeCommand{
+		name: "Amsterdam",
+	}
+	handler := &fakeCommandHandler{}
+
+	m, _ := mediator.New(
+		mediator.WithBehaviourFunc(passThru),
+		mediator.WithHandler(&fakeCommand{}, handler),
+	)
+
+	result, err := m.Send(context.Background(), cmd)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 42, result)
 }
 
 type fakeCommand struct {
@@ -57,7 +116,8 @@ type fakeCommandHandler struct {
 	captured mediator.Message
 }
 
-func (f *fakeCommandHandler) Handle(_ context.Context, msg mediator.Message) error {
+func (f *fakeCommandHandler) Handle(_ context.Context, msg mediator.Message) (interface{}, error) {
 	f.captured = msg
-	return nil
+	cmd := msg.(*fakeCommand)
+	return cmd.name, nil
 }

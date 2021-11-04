@@ -21,18 +21,18 @@ func New(opts ...Option) (*Mediator, error) {
 	return m, nil
 }
 
-func (m *Mediator) Send(ctx context.Context, req Message) error {
+func (m *Mediator) Send(ctx context.Context, req Message) (interface{}, error) {
 	if m.context.pipeline.empty() {
 		return m.send(ctx, req)
 	}
 	return m.context.pipeline(ctx, req)
 }
 
-func (m *Mediator) send(ctx context.Context, req Message) error {
+func (m *Mediator) send(ctx context.Context, req Message) (interface{}, error) {
 	key := req.Key()
 	handler, ok := m.context.handlers[key]
 	if !ok {
-		return ErrHandlerNotFound
+		return nil, ErrHandlerNotFound
 	}
 	return handler.Handle(ctx, req)
 }
@@ -43,7 +43,7 @@ func (m *Mediator) pipe(call Behavior) {
 	}
 	seed := m.context.pipeline
 
-	m.context.pipeline = func(ctx context.Context, msg Message) error {
-		return call(ctx, msg, func(context.Context) error { return seed(ctx, msg) })
+	m.context.pipeline = func(ctx context.Context, msg Message) (interface{}, error) {
+		return call(ctx, msg, func(context.Context) (interface{}, error) { return seed(ctx, msg) })
 	}
 }
