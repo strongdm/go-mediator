@@ -1,4 +1,4 @@
-module github.com/eyazici90/go-mediator
+module github.com/TheFellow/go-mediator
 
 go 1.14
 

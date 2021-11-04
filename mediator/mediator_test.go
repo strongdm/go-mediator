@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/eyazici90/go-mediator/mediator"
+	"github.com/TheFellow/go-mediator/mediator"
 	"github.com/stretchr/testify/assert"
 )
 
