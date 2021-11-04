@@ -63,7 +63,7 @@ func TestMediator_should_execute_behavior_when_send(t *testing.T) {
 	assert.Equal(t, cmd, got)
 }
 
-func TestMediator_with_behavior_should_return_handler_result(t *testing.T) {
+func TestMediator_with_behavior_func_should_return_handler_result(t *testing.T) {
 	passThru := func(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
 		return next(ctx)
 	}
@@ -84,8 +84,26 @@ func TestMediator_with_behavior_should_return_handler_result(t *testing.T) {
 	assert.Equal(t, cmd.name, result)
 }
 
-func TestMediator_with_behavior_can_alter_handler_result(t *testing.T) {
-	passThru := func(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
+func TestMediator_with_behavior_should_return_handler_result(t *testing.T) {
+
+	cmd := &fakeCommand{
+		name: "Amsterdam",
+	}
+	handler := &fakeCommandHandler{}
+
+	m, _ := mediator.New(
+		mediator.WithBehaviour(PassThruBehavior{}),
+		mediator.WithHandler(&fakeCommand{}, handler),
+	)
+
+	result, err := m.Send(context.Background(), cmd)
+
+	assert.NoError(t, err)
+	assert.Equal(t, cmd.name, result)
+}
+
+func TestMediator_with_behavior_func_can_alter_handler_result(t *testing.T) {
+	theResultIs42 := func(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
 		_, err := next(ctx)
 		return 42, err
 	}
@@ -96,7 +114,25 @@ func TestMediator_with_behavior_can_alter_handler_result(t *testing.T) {
 	handler := &fakeCommandHandler{}
 
 	m, _ := mediator.New(
-		mediator.WithBehaviourFunc(passThru),
+		mediator.WithBehaviourFunc(theResultIs42),
+		mediator.WithHandler(&fakeCommand{}, handler),
+	)
+
+	result, err := m.Send(context.Background(), cmd)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 42, result)
+}
+
+func TestMediator_with_behavior_can_alter_handler_result(t *testing.T) {
+
+	cmd := &fakeCommand{
+		name: "Amsterdam",
+	}
+	handler := &fakeCommandHandler{}
+
+	m, _ := mediator.New(
+		mediator.WithBehaviour(FortyTwoBehavior{}),
 		mediator.WithHandler(&fakeCommand{}, handler),
 	)
 
@@ -120,4 +156,17 @@ func (f *fakeCommandHandler) Handle(_ context.Context, msg mediator.Message) (in
 	f.captured = msg
 	cmd := msg.(*fakeCommand)
 	return cmd.name, nil
+}
+
+type PassThruBehavior struct{}
+
+func (p PassThruBehavior) Process(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
+	return next(ctx)
+}
+
+type FortyTwoBehavior struct{}
+
+func (p FortyTwoBehavior) Process(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
+	_, err := next(ctx)
+	return 42, err
 }
