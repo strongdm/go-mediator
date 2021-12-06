@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/TheFellow/go-mediator/pkg/mediator"
+	"github.com/strongdm/go-mediator/pkg/mediator"
 )
 
 func BenchmarkMediator(b *testing.B) {

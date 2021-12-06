@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/TheFellow/go-mediator/mediator"
 	"github.com/stretchr/testify/assert"
+	"github.com/strongdm/go-mediator/mediator"
 )
 
 func TestMediator_should_dispatch_msg_when_send(t *testing.T) {
