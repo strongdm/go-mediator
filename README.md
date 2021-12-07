@@ -81,21 +81,19 @@ result, err := m.Send(ctx, cmd)
 ***Func based usage***
 
 ```go
-    m, err  := mediator.New(
-        mediator.WithBehaviourFunc(func(ctx context.Context, cmd mediator.Message, next mediator.Next) (interface{}, error) {
-            log.Println("Pre Process - 1!")
-            
-            next(ctx)
-            
-            log.Println("Post Process - 1")
-            return  nil, nil
-    }))
+m, err  := mediator.New(
+    mediator.WithBehaviourFunc(func(ctx context.Context, cmd mediator.Message, next mediator.Next) (interface{}, error) {
+        log.Println("Pre Process - 1!")
+        
+        next(ctx)
+        
+        log.Println("Post Process - 1")
+        return  nil, nil
+}))
 ```
 
 ## Examples
 
-[Simple](https://github.com/eyazici90/go-mediator/tree/master/_examples)
+[Simple](https://github.com/strongdm/go-mediator/tree/master/_examples)
 
-  
-
-TBD...
+TODO: Add Request/Response example
