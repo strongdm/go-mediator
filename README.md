@@ -49,13 +49,13 @@ m, err := mediator.New(mediator.WithBehaviour(behaviour.NewLogger()))
 ***Func based usage***
 
 ```go
-    m, err := mediator.New(mediator.WithBehaviourFunc(func(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
+m, err := mediator.New(mediator.WithBehaviourFunc(func(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
     log.Println("Pre Process!")
     next(ctx)
     log.Println("Post Process")
     
     return  nil, nil
-    }))
+}))
 ```
   
 
