@@ -30,10 +30,11 @@ func (m *Mediator) Send(ctx context.Context, req Message) (interface{}, error) {
 
 func (m *Mediator) send(ctx context.Context, req Message) (interface{}, error) {
 	key := req.Key()
-	handler, ok := m.context.handlers[key]
+	handlerFunc, ok := m.context.handlers[key]
 	if !ok {
 		return nil, ErrHandlerNotFound
 	}
+	handler := handlerFunc()
 	return handler.Handle(ctx, req)
 }
 

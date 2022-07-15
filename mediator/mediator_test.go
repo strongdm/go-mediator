@@ -8,7 +8,7 @@ import (
 	"github.com/strongdm/go-mediator/mediator"
 )
 
-func TestMediator_should_dispatch_msg_when_send(t *testing.T) {
+func TestMediator_with_handler_should_dispatch_msg_when_send(t *testing.T) {
 	cmd := &fakeCommand{
 		name: "Amsterdam",
 	}
@@ -24,7 +24,7 @@ func TestMediator_should_dispatch_msg_when_send(t *testing.T) {
 	assert.Equal(t, cmd, handler.captured)
 }
 
-func TestMediator_should_return_handler_result(t *testing.T) {
+func TestMediator_with_handler_should_return_handler_result(t *testing.T) {
 	cmd := &fakeCommand{
 		name: "Amsterdam",
 	}
@@ -32,6 +32,40 @@ func TestMediator_should_return_handler_result(t *testing.T) {
 
 	m, _ := mediator.New(
 		mediator.WithHandler(&fakeCommand{}, handler),
+	)
+
+	result, err := m.Send(context.Background(), cmd)
+
+	assert.NoError(t, err)
+	assert.Equal(t, cmd.name, result)
+}
+
+func TestMediator_with_handler_func_should_dispatch_msg_when_send(t *testing.T) {
+	cmd := &fakeCommand{
+		name: "Amsterdam",
+	}
+	handler := &fakeCommandHandler{}
+	handlerFunc := func() mediator.RequestHandler { return handler }
+
+	m, _ := mediator.New(
+		mediator.WithHandlerFunc(&fakeCommand{}, handlerFunc),
+	)
+
+	_, err := m.Send(context.Background(), cmd)
+
+	assert.NoError(t, err)
+	assert.Equal(t, cmd, handler.captured)
+}
+
+func TestMediator_with_handler_func_should_return_handler_result(t *testing.T) {
+	cmd := &fakeCommand{
+		name: "Amsterdam",
+	}
+	handler := &fakeCommandHandler{}
+	handlerFunc := func() mediator.RequestHandler { return handler }
+
+	m, _ := mediator.New(
+		mediator.WithHandlerFunc(&fakeCommand{}, handlerFunc),
 	)
 
 	result, err := m.Send(context.Background(), cmd)
@@ -160,13 +194,13 @@ func (f *fakeCommandHandler) Handle(_ context.Context, msg mediator.Message) (in
 
 type PassThruBehavior struct{}
 
-func (p PassThruBehavior) Process(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
+func (p PassThruBehavior) Process(ctx context.Context, _ mediator.Message, next mediator.Next) (interface{}, error) {
 	return next(ctx)
 }
 
 type FortyTwoBehavior struct{}
 
-func (p FortyTwoBehavior) Process(ctx context.Context, msg mediator.Message, next mediator.Next) (interface{}, error) {
+func (p FortyTwoBehavior) Process(ctx context.Context, _ mediator.Message, next mediator.Next) (interface{}, error) {
 	_, err := next(ctx)
 	return 42, err
 }

@@ -24,12 +24,12 @@ func (p Pipeline) empty() bool { return p == nil }
 type PipelineContext struct {
 	behaviors Behaviors
 	pipeline  Pipeline
-	handlers  map[string]RequestHandler
+	handlers  map[string]func() RequestHandler
 }
 
 func newPipelineContext(opts ...Option) (*PipelineContext, error) {
 	ctx := PipelineContext{
-		handlers: make(map[string]RequestHandler),
+		handlers: make(map[string]func() RequestHandler),
 	}
 	for _, opt := range opts {
 		if err := opt(&ctx); err != nil {
@@ -53,7 +53,14 @@ func WithBehaviourFunc(fn func(context.Context, Message, Next) (interface{}, err
 
 func WithHandler(req Message, rh RequestHandler) Option {
 	return func(pCtx *PipelineContext) error {
-		return pCtx.registerHandler(req, rh)
+		f := func() RequestHandler { return rh }
+		return pCtx.registerHandlerFunc(req, f)
+	}
+}
+
+func WithHandlerFunc(req Message, rhf func() RequestHandler) Option {
+	return func(pCtx *PipelineContext) error {
+		return pCtx.registerHandlerFunc(req, rhf)
 	}
 }
 
@@ -72,7 +79,7 @@ func (p *PipelineContext) use(call func(context.Context, Message, Next) (interfa
 	return nil
 }
 
-func (p *PipelineContext) registerHandler(req Message, h RequestHandler) error {
+func (p *PipelineContext) registerHandlerFunc(req Message, h func() RequestHandler) error {
 	if req == nil || h == nil {
 		return ErrInvalidArg
 	}
