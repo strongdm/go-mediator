@@ -34,7 +34,11 @@ func (m *Mediator) send(ctx context.Context, req Message) (interface{}, error) {
 	if !ok {
 		return nil, ErrHandlerNotFound
 	}
-	handler := handlerFunc()
+	handler, err := handlerFunc()
+	if err != nil {
+		return nil, err
+	}
+
 	return handler.Handle(ctx, req)
 }
 

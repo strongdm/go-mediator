@@ -2,6 +2,7 @@ package mediator_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,12 +41,28 @@ func TestMediator_with_handler_should_return_handler_result(t *testing.T) {
 	assert.Equal(t, cmd.name, result)
 }
 
+func TestMediator_with_handler_should_return_handler_error(t *testing.T) {
+	cmd := &fakeErrorCommand{
+		name: "Amsterdam",
+	}
+	handler := &fakeErrorCommandHandler{}
+
+	m, _ := mediator.New(
+		mediator.WithHandler(&fakeErrorCommand{}, handler),
+	)
+
+	result, err := m.Send(context.Background(), cmd)
+
+	assert.EqualError(t, err, cmd.name)
+	assert.Nil(t, result)
+}
+
 func TestMediator_with_handler_func_should_dispatch_msg_when_send(t *testing.T) {
 	cmd := &fakeCommand{
 		name: "Amsterdam",
 	}
 	handler := &fakeCommandHandler{}
-	handlerFunc := func() mediator.RequestHandler { return handler }
+	handlerFunc := func() (mediator.RequestHandler, error) { return handler, nil }
 
 	m, _ := mediator.New(
 		mediator.WithHandlerFunc(&fakeCommand{}, handlerFunc),
@@ -62,7 +79,7 @@ func TestMediator_with_handler_func_should_return_handler_result(t *testing.T) {
 		name: "Amsterdam",
 	}
 	handler := &fakeCommandHandler{}
-	handlerFunc := func() mediator.RequestHandler { return handler }
+	handlerFunc := func() (mediator.RequestHandler, error) { return handler, nil }
 
 	m, _ := mediator.New(
 		mediator.WithHandlerFunc(&fakeCommand{}, handlerFunc),
@@ -72,6 +89,43 @@ func TestMediator_with_handler_func_should_return_handler_result(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, cmd.name, result)
+}
+
+func TestMediator_with_handler_func_should_return_handler_error(t *testing.T) {
+	cmd := &fakeErrorCommand{
+		name: "Amsterdam",
+	}
+	handler := &fakeErrorCommandHandler{}
+	handlerFunc := func() (mediator.RequestHandler, error) {
+		return handler, nil
+	}
+
+	m, _ := mediator.New(
+		mediator.WithHandlerFunc(&fakeErrorCommand{}, handlerFunc),
+	)
+
+	result, err := m.Send(context.Background(), cmd)
+
+	assert.EqualError(t, err, cmd.name)
+	assert.Nil(t, result)
+}
+
+func TestMediator_with_handler_func_should_return_handler_func_error(t *testing.T) {
+	cmd := &fakeErrorCommand{
+		name: "Amsterdam",
+	}
+	handlerFunc := func() (mediator.RequestHandler, error) {
+		return nil, errors.New("cannot initialize handler")
+	}
+
+	m, _ := mediator.New(
+		mediator.WithHandlerFunc(&fakeErrorCommand{}, handlerFunc),
+	)
+
+	result, err := m.Send(context.Background(), cmd)
+
+	assert.EqualError(t, err, "cannot initialize handler")
+	assert.Nil(t, result)
 }
 
 func TestMediator_should_execute_behavior_when_send(t *testing.T) {
@@ -190,6 +244,24 @@ func (f *fakeCommandHandler) Handle(_ context.Context, msg mediator.Message) (in
 	f.captured = msg
 	cmd := msg.(*fakeCommand)
 	return cmd.name, nil
+}
+
+type fakeErrorCommand struct {
+	name string
+}
+
+func (f fakeErrorCommand) Key() string {
+	return "fakeErrorCommand"
+}
+
+type fakeErrorCommandHandler struct {
+	captured mediator.Message
+}
+
+func (f *fakeErrorCommandHandler) Handle(_ context.Context, msg mediator.Message) (interface{}, error) {
+	f.captured = msg
+	cmd := msg.(*fakeErrorCommand)
+	return nil, errors.New(cmd.name)
 }
 
 type PassThruBehavior struct{}
